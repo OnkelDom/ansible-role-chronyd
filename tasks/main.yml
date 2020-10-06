@@ -1,0 +1,38 @@
+---
+- name: install chrony
+  package:
+    name: chrony
+    state: present
+  environment: "{{ proxy_env }}"
+  become: true
+  tags: chrony
+
+- name: configure /etc/chrony.conf & /etc/sysconfig/chrony
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: chrony
+    mode: 0644
+  with_items:
+    - src: "chrony.config.j2"
+      dest: "/etc/chrony.conf"
+    - src: "chrony.sysconfig.j2"
+      dest: "/etc/sysconfig/chronyd"
+  become: true
+  tags: chrony
+  notify: restart chronyd
+
+- name: set system timezone
+  timezone:
+    name: "{{ chrony_timezone }}"
+  tags: chrony
+  become: true
+
+- name: start and enable chrony service
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+  tags: chrony
+  become: true
